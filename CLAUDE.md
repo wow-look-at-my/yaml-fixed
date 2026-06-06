@@ -4,11 +4,13 @@ Guidance for working in this repository.
 
 ## What this is
 
-`yaml-fixed` is a YAML parser/emitter (Go) whose defining rule is: **indentation
-is tabs, and only tabs.** A space in the indentation region of a line is a
-syntax error. Spaces remain legal inside values, after `key:`/`-` separators,
-in quotes, and in flow collections. If you change parsing behaviour, keep that
-rule absolute.
+`yaml-fixed` is a YAML parser/emitter (Go) whose defining rule is: **tabs for
+indentation, spaces for alignment.** A line's structural depth is its count of
+leading tabs and nothing else; spaces after the tabs are alignment and never
+change depth. Leading spaces with no preceding tab are a syntax error, as is a
+tab after alignment spaces. Spaces are otherwise legal inside values, after
+`key:`/`-` separators, in quotes, and in flow collections. If you change parsing
+behaviour, keep that rule absolute (`measure` in `parse.go` enforces it).
 
 ## Layout
 
@@ -43,8 +45,12 @@ It runs `go mod tidy`, `go vet`, tests with coverage, and the build. CI
 
 ## Design decisions worth preserving
 
-- Children are indented strictly more tabs than their parent; nested blocks must
-  be deeper than the `key:`/`-` they hang off (no same-indent sequences).
-- Multi-key mappings inside sequences use the expanded form (dash alone, body
-  one tab deeper); `Marshal` emits this form so output re-parses.
+- Children have strictly more tabs than their parent; depth is tab count only,
+  so alignment spaces never create nesting (this is what lets a sequence item's
+  mapping body align past the `- ` marker while staying at the item's depth).
+- A sequence item's body is gathered by `collectItemBody` (deeper lines, plus
+  same-depth non-dash lines) and parsed via a sub-parser in `parseItemBody`.
+- `Marshal` emits the compact aligned form for mappings in sequences at depth
+  >= 1, and the dash-on-its-own-line form at the left margin (depth 0, where
+  there is no tab to align against); both re-parse.
 - Anchors/aliases, merge keys, and explicit tags are intentionally unsupported.

@@ -42,14 +42,35 @@ func TestMarshalNestedUsesTabs(t *testing.T) {
 
 }
 
-func TestMarshalSequenceOfMappingsExpanded(t *testing.T) {
+func TestMarshalSequenceOfMappingsCompact(t *testing.T) {
+	// Nested under a key (depth >= 1): compact form, pair shares the dash line.
+	in := map[string]any{"people": []any{map[string]any{"name": "Alice"}}}
+	got, err := Marshal(in)
+	require.Nil(t, err)
+
+	want := "people:\n\t- name: Alice\n"
+	assert.Equal(t, want, string(got))
+}
+
+func TestMarshalSequenceOfMappingsAligned(t *testing.T) {
+	in := map[string]any{"people": []any{map[string]any{"name": "Alice", "age": 30}}}
+	got, err := Marshal(in)
+	require.Nil(t, err)
+
+	// Keys sorted; first pair on the dash line, the rest aligned with spaces.
+	want := "people:\n\t- age: 30\n\t  name: Alice\n"
+	assert.Equal(t, want, string(got))
+}
+
+func TestMarshalTopLevelSequenceOfMappingsExpanded(t *testing.T) {
+	// At the left margin there is no tab to align against, so the dash stands
+	// alone and the body is one tab deeper. Both forms parse back identically.
 	in := []any{map[string]any{"name": "Alice"}}
 	got, err := Marshal(in)
 	require.Nil(t, err)
 
 	want := "-\n\tname: Alice\n"
 	assert.Equal(t, want, string(got))
-
 }
 
 func TestMarshalQuotesAmbiguousStrings(t *testing.T) {

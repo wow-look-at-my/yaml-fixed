@@ -72,6 +72,59 @@ func TestParseSequenceOfMappingsExpanded(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
+func TestParseSequenceOfMappingsAligned(t *testing.T) {
+	// Dash on its own line; mapping body at the SAME tab depth, aligned past
+	// the marker with spaces. Tabs for indentation, spaces for alignment.
+	in := "people:\n\t-\n\t  name: Alice\n\t  age: 30\n\t-\n\t  name: Bob\n\t  age: 25\n"
+	got, err := Parse([]byte(in))
+	require.NoError(t, err)
+	want := map[string]any{
+		"people": []any{
+			map[string]any{"name": "Alice", "age": 30},
+			map[string]any{"name": "Bob", "age": 25},
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestParseSequenceInlineFirstKeyAligned(t *testing.T) {
+	// The canonical pretty form: first key shares the dash line, the rest align.
+	in := "people:\n\t- name: Alice\n\t  age: 30\n\t- name: Bob\n\t  age: 25\n"
+	got, err := Parse([]byte(in))
+	require.NoError(t, err)
+	want := map[string]any{
+		"people": []any{
+			map[string]any{"name": "Alice", "age": 30},
+			map[string]any{"name": "Bob", "age": 25},
+		},
+	}
+	assert.Equal(t, want, got)
+}
+
+func TestAlignmentSpacesAreNotDepth(t *testing.T) {
+	// age aligned with name (same tab depth) => sibling key of the item mapping.
+	got, err := Parse([]byte("items:\n\t- key: v\n\t  other: w\n"))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"items": []any{
+		map[string]any{"key": "v", "other": "w"},
+	}}, got)
+
+	// sub indented one more TAB than key => child of key; other stays a sibling.
+	got, err = Parse([]byte("items:\n\t- key:\n\t\tsub: 1\n\t  other: w\n"))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"items": []any{
+		map[string]any{"key": map[string]any{"sub": 1}, "other": "w"},
+	}}, got)
+}
+
+func TestTabAfterSpacesRejected(t *testing.T) {
+	_, err := Parse([]byte("a:\n\t \tb: 1\n"))
+	require.Error(t, err)
+	se, ok := err.(*SyntaxError)
+	require.True(t, ok)
+	assert.Contains(t, se.Msg, "tab after spaces")
+}
+
 func TestParseInlinePairItem(t *testing.T) {
 	got, err := Parse([]byte("- key: value\n- 7"))
 	require.NoError(t, err)
@@ -107,9 +160,8 @@ func TestBlankLinesIgnored(t *testing.T) {
 
 func TestSpaceIndentationRejected(t *testing.T) {
 	cases := []string{
-		"server:\n  host: localhost",   // two spaces
-		"server:\n    host: localhost", // four spaces
-		"a:\n\t  mixed: 1",             // tab then spaces before content
+		"server:\n  host: localhost",   // two spaces, no tab
+		"server:\n    host: localhost", // four spaces, no tab
 		"list:\n  - item",              // space-indented sequence
 		" key: value",                  // single leading space at root
 	}

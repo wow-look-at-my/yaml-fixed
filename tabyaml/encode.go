@@ -48,63 +48,84 @@ func writeNode(b *strings.Builder, v reflect.Value, indent int) error {
 	}
 }
 
-func writeMap(b *strings.Builder, v reflect.Value, indent int) error {
+// entry is one mapping key/value pair, ready to emit.
+type entry struct {
+	key string
+	val reflect.Value
+}
+
+// mapEntries returns a map's entries sorted by key.
+func mapEntries(v reflect.Value) ([]entry, error) {
 	keys := v.MapKeys()
-	type kv struct {
-		s string
-		k reflect.Value
-	}
-	entries := make([]kv, 0, len(keys))
+	es := make([]entry, 0, len(keys))
 	for _, k := range keys {
 		s, err := scalarString(k)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		entries = append(entries, kv{s, k})
+		es = append(es, entry{s, v.MapIndex(k)})
 	}
-	if len(entries) == 0 {
-		writeTabs(b, indent)
-		b.WriteString("{}\n")
-		return nil
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].s < entries[j].s })
-	for _, e := range entries {
-		writeTabs(b, indent)
-		b.WriteString(formatKey(e.s))
-		b.WriteByte(':')
-		if err := writeAfterColon(b, v.MapIndex(e.k), indent); err != nil {
-			return err
-		}
-	}
-	return nil
+	sort.Slice(es, func(i, j int) bool { return es[i].key < es[j].key })
+	return es, nil
 }
 
-func writeStruct(b *strings.Builder, v reflect.Value, indent int) error {
+// structEntries returns a struct's emittable fields in declaration order.
+func structEntries(v reflect.Value) []entry {
 	t := v.Type()
-	fields := make([]fieldInfo, 0, t.NumField())
+	var es []entry
 	for i := 0; i < t.NumField(); i++ {
-		if fi, ok := parseField(t.Field(i)); ok {
-			fields = append(fields, fi)
+		fi, ok := parseField(t.Field(i))
+		if !ok {
+			continue
 		}
-	}
-	emitted := 0
-	for _, fi := range fields {
 		fv := v.Field(fi.index)
 		if fi.omitEmpty && isEmptyValue(fv) {
 			continue
 		}
-		writeTabs(b, indent)
-		b.WriteString(formatKey(fi.name))
-		b.WriteByte(':')
-		if err := writeAfterColon(b, fv, indent); err != nil {
-			return err
-		}
-		emitted++
+		es = append(es, entry{fi.name, fv})
 	}
-	if emitted == 0 {
-		// Rewrite as an empty mapping for a struct with no emitted fields.
+	return es
+}
+
+// entriesOf returns the mapping entries of v when it is a map or struct.
+func entriesOf(v reflect.Value) ([]entry, bool, error) {
+	switch v.Kind() {
+	case reflect.Map:
+		es, err := mapEntries(v)
+		return es, true, err
+	case reflect.Struct:
+		return structEntries(v), true, nil
+	}
+	return nil, false, nil
+}
+
+func writeMap(b *strings.Builder, v reflect.Value, indent int) error {
+	es, err := mapEntries(v)
+	if err != nil {
+		return err
+	}
+	return writeEntries(b, es, indent)
+}
+
+func writeStruct(b *strings.Builder, v reflect.Value, indent int) error {
+	return writeEntries(b, structEntries(v), indent)
+}
+
+// writeEntries emits a block mapping, one "key:" line per entry, or "{}" when
+// there are no entries.
+func writeEntries(b *strings.Builder, es []entry, indent int) error {
+	if len(es) == 0 {
 		writeTabs(b, indent)
 		b.WriteString("{}\n")
+		return nil
+	}
+	for _, e := range es {
+		writeTabs(b, indent)
+		b.WriteString(formatKey(e.key))
+		b.WriteByte(':')
+		if err := writeAfterColon(b, e.val, indent); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -117,13 +138,49 @@ func writeSeq(b *strings.Builder, v reflect.Value, indent int) error {
 		return nil
 	}
 	for i := 0; i < n; i++ {
-		writeTabs(b, indent)
-		b.WriteByte('-')
-		if err := writeAfterDash(b, v.Index(i), indent); err != nil {
+		if err := writeSeqItem(b, v.Index(i), indent); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// writeSeqItem emits one sequence element. A non-empty mapping uses the compact
+// aligned form -- the first pair shares the dash line, later pairs align past
+// the marker with spaces -- which is the whole point of tab-YAML: tabs set
+// depth, spaces handle alignment.
+//
+//	- name: Alice
+//	  age: 30
+//
+// Alignment needs a leading tab to align against, so at the document's left
+// margin (depth 0) a mapping item falls back to the dash-on-its-own-line form
+// with the body one tab deeper. Both forms parse back identically.
+func writeSeqItem(b *strings.Builder, elem reflect.Value, indent int) error {
+	e := indirect(elem)
+	es, isMapping, err := entriesOf(e)
+	if err != nil {
+		return err
+	}
+	if isMapping && len(es) > 0 && indent >= 1 {
+		for i, en := range es {
+			writeTabs(b, indent)
+			if i == 0 {
+				b.WriteString("- ")
+			} else {
+				b.WriteString("  ") // align past the "- " marker
+			}
+			b.WriteString(formatKey(en.key))
+			b.WriteByte(':')
+			if err := writeAfterColon(b, en.val, indent); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	writeTabs(b, indent)
+	b.WriteByte('-')
+	return writeAfterDash(b, elem, indent)
 }
 
 // writeAfterColon writes the value that follows a "key:" separator, choosing

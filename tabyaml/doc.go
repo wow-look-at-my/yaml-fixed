@@ -11,10 +11,14 @@
 // indentation level is an encoding accident, not a design. tabyaml treats that
 // accident as an error.
 //
-// The rule is therefore simple and absolute: structural indentation is one or
-// more leading TAB characters. A space appearing in the indentation region of a
-// line is a syntax error, not a smaller indent. Spaces remain perfectly legal
-// everywhere they belong -- inside scalar values, after the "key:" separator,
+// The rule is therefore simple and absolute: tabs are for indentation, spaces
+// are for alignment. A line's structural depth is its number of leading TAB
+// characters, and nothing else. After those tabs you may add spaces to align
+// content -- for instance to line a mapping up past a "- " marker -- and those
+// spaces never change the depth. What is forbidden is using spaces AS
+// indentation: leading spaces with no preceding tab are a syntax error, as is a
+// tab placed after alignment spaces (indent first, then align). Spaces are
+// otherwise perfectly legal -- inside scalar values, after the "key:" separator,
 // after a "-" sequence marker, inside quotes, and inside flow collections.
 //
 // # Supported syntax
@@ -33,20 +37,20 @@
 //
 // # Sequences of mappings
 //
-// Because a tab cannot align to the column after "- ", a multi-key mapping
-// inside a sequence is written in expanded form: the dash stands alone and the
-// mapping body is indented one further tab.
+// A multi-key mapping inside a sequence is written with one tab of indentation
+// for the item and spaces to align the keys past the "- " marker:
 //
 //	people:
-//		-
-//			name: Alice
-//			age: 30
-//		-
-//			name: Bob
-//			age: 25
+//		- name: Alice
+//		  age: 30
+//		- name: Bob
+//		  age: 25
 //
-// A single inline pair (- key: value), a scalar (- value) and a flow
-// (- [1, 2]) are all accepted directly after the dash.
+// Here every line under people carries one leading tab (the structural depth);
+// the two spaces before "age" are alignment, not depth, so "name" and "age" are
+// siblings of the same mapping. To make a value a child instead of a sibling,
+// give it another tab. A scalar (- value), a flow (- [1, 2]) and a dash on its
+// own line (with the body on following lines) are all accepted too.
 //
 // # Not supported
 //

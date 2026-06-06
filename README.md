@@ -23,20 +23,22 @@ server:
 # This is rejected -- the indentation uses spaces:
 server:
   host: localhost
-# => tabyaml: line 2, column 1: spaces cannot be used for indentation; tab-YAML indents with tabs only
+# => tabyaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
 ```
 
 Spaces are still perfectly legal everywhere they actually belong: inside scalar
 values (`name: Jane Doe`), after the `key:` separator, after a `-` marker,
-inside quotes, and inside flow collections (`[1, 2, 3]`).
+inside quotes, inside flow collections (`[1, 2, 3]`), and -- crucially -- as
+**alignment** after the leading tabs.
 
 ## The one rule
 
-> Structural indentation is one or more leading **tab** characters. A space in
-> the indentation region of a line is an error, not a smaller indent.
+> **Tabs for indentation, spaces for alignment.** A line's depth is its number
+> of leading **tab** characters, and nothing else. Spaces after those tabs align
+> content (they never change the depth). Leading spaces with no preceding tab are
+> an error, and so is a tab placed after alignment spaces.
 
-A child node is indented with strictly more tabs than its parent. That is the
-whole model.
+A child node has strictly more tabs than its parent. That is the whole model.
 
 ## Library
 
@@ -111,22 +113,42 @@ $ printf 'server:\n\thost: localhost\n' | tabyaml to-json
 
 ## Sequences of mappings
 
-A tab cannot align to the column just after `- `, so a multi-key mapping inside a
-sequence is written in **expanded form**: the dash sits on its own line and the
-mapping body is indented one further tab.
+This is where "tabs for indentation, spaces for alignment" earns its keep. The
+item is indented with a tab; the keys are aligned past the `- ` marker with
+spaces. `name` and `age` carry the same single tab, so they are siblings:
+
+```
+people:
+	- name: Alice
+	  age: 30
+	- name: Bob
+	  age: 25
+```
+
+The dash may also stand on its own line with the body below it; either way the
+body sits at the item's tab depth, aligned with spaces:
 
 ```
 people:
 	-
-		name: Alice
-		age: 30
-	-
-		name: Bob
-		age: 25
+	  name: Alice
+	  age: 30
 ```
 
-Single inline values after a dash are fine: `- scalar`, `- key: value`,
-`- [1, 2]`. `Marshal` always emits the expanded form so output re-parses.
+Because depth is counted in *tabs only*, alignment spaces never create nesting.
+To make a value a child rather than a sibling, give it another **tab**:
+
+```
+people:
+	- name:
+			first: Alice
+			last: Liddell
+	  age: 30
+```
+
+`- scalar` and `- [1, 2]` work too. `Marshal` emits the compact aligned form
+(and, at the document's left margin where there is no tab to align against, the
+dash-on-its-own-line form) so output always re-parses.
 
 ## Supported syntax
 

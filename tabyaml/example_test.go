@@ -23,8 +23,8 @@ func ExampleUnmarshal() {
 }
 
 func ExampleParse_rejectsSpaces() {
-	// Two spaces of indentation is a syntax error in tab-YAML.
+	// Two spaces of indentation (no leading tab) is a syntax error.
 	_, err := tabyaml.Parse([]byte("server:\n  host: localhost"))
 	fmt.Println(err)
-	// Output: tabyaml: line 2, column 1: spaces cannot be used for indentation; tab-YAML indents with tabs only
+	// Output: tabyaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
 }

@@ -138,25 +138,36 @@ func (p *parser) hasContent() bool {
 	return false
 }
 
-// measure splits a physical line into its tab-indentation depth and the content
-// that follows. It enforces the central rule of tab-YAML: indentation is tabs
-// only. A space found in the indentation region of a non-blank line is an error.
+// measure splits a physical line into its structural indentation depth and the
+// content that follows. Depth is the number of leading TAB characters and
+// nothing else. Spaces are permitted only as ALIGNMENT after the tabs -- for
+// example to line a mapping body up past a "- " marker -- and never count
+// toward depth. Two situations are errors: leading spaces with no preceding tab
+// (spaces masquerading as indentation), and a tab that comes after alignment
+// spaces (indent first, then align).
 func measure(ln physLine) (indent int, content string, blank bool, err error) {
 	t := ln.text
 	i := 0
 	for i < len(t) && t[i] == '\t' {
 		i++
 	}
-	rest := t[i:]
-	if strings.TrimRight(rest, " \t") == "" {
-		// Nothing but whitespace: a blank line. Spaces are tolerated here.
+	if strings.TrimRight(t[i:], " \t") == "" {
+		// Nothing but whitespace after the tabs: a blank line.
 		return i, "", true, nil
 	}
-	if rest[0] == ' ' {
-		return 0, "", false, errorf(ln.no, i+1,
-			"spaces cannot be used for indentation; tab-YAML indents with tabs only")
+	j := i
+	for j < len(t) && t[j] == ' ' {
+		j++
 	}
-	return i, rest, false, nil
+	if i == 0 && j > 0 {
+		return 0, "", false, errorf(ln.no, 1,
+			"spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)")
+	}
+	if j < len(t) && t[j] == '\t' {
+		return 0, "", false, errorf(ln.no, j+1,
+			"tab after spaces; indent with tabs first, then align with spaces")
+	}
+	return i, t[j:], false, nil
 }
 
 // peek returns the next structural line without consuming it, skipping blank
@@ -249,7 +260,9 @@ func (p *parser) parseMapping(indent int) (any, error) {
 			return nil, errorf(tok.no, tok.indent+1, "unexpected indentation in mapping")
 		}
 		if isSeqMarker(tok.content) {
-			return nil, errorf(tok.no, indent+1, "expected a mapping key but found a sequence item")
+			// A dash at this depth ends the mapping (it belongs to an enclosing
+			// sequence); the caller decides whether that is valid here.
+			break
 		}
 		key, val, ok, err := splitMapping(tok)
 		if err != nil {
@@ -287,26 +300,13 @@ func (p *parser) parseSequence(indent int) (any, error) {
 		if !isSeqMarker(tok.content) {
 			break
 		}
-		p.next()
-		rest := strings.TrimLeft(tok.content[1:], " \t")
-		if rest == "" {
-			// Value is the block indented one or more tabs deeper, or null.
-			child, err := p.peek()
-			if err != nil {
-				return nil, err
-			}
-			if child != nil && child.indent > indent {
-				v, err := p.parseNode(child.indent)
-				if err != nil {
-					return nil, err
-				}
-				s = append(s, v)
-			} else {
-				s = append(s, nil)
-			}
-			continue
+		p.next() // consume the dash line
+		inline := strings.TrimLeft(tok.content[1:], " \t")
+		body, err := p.collectItemBody(inline, indent, tok.no)
+		if err != nil {
+			return nil, err
 		}
-		v, err := p.parseInlineItem(rest, indent, tok.no)
+		v, err := parseItemBody(body, indent)
 		if err != nil {
 			return nil, err
 		}
@@ -315,22 +315,64 @@ func (p *parser) parseSequence(indent int) (any, error) {
 	return s, nil
 }
 
-// parseInlineItem handles the content that follows a "- " on a sequence line: a
-// scalar, a flow collection, a block-scalar header, or a single mapping pair.
-func (p *parser) parseInlineItem(rest string, indent, no int) (any, error) {
-	if isBlockScalarHeader(rest) {
-		return p.parseBlockScalar(rest, indent, no)
+// collectItemBody gathers the physical lines making up one sequence item: an
+// optional synthetic line carrying the content written inline after the dash,
+// followed by every line that belongs to the item. A line belongs when it is
+// indented deeper than the dash, or sits at the same tab depth but is not itself
+// a new dash -- those same-depth lines are the item's mapping body, aligned past
+// the marker with spaces ("tabs for indentation, spaces for alignment").
+func (p *parser) collectItemBody(inline string, indent, no int) ([]physLine, error) {
+	var body []physLine
+	if inline != "" {
+		body = append(body, physLine{text: strings.Repeat("\t", indent) + inline, no: no})
 	}
-	if key, val, ok, err := splitMapping(&lineTok{content: rest, no: no, indent: indent}); err != nil {
-		return nil, err
-	} else if ok {
-		value, err := p.parseValue(val, indent, no)
+	for p.pos < len(p.lines) {
+		ln := p.lines[p.pos]
+		lineIndent, content, blank, err := measure(ln)
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{key: value}, nil
+		if blank || strings.HasPrefix(content, "#") {
+			body = append(body, ln)
+			p.pos++
+			continue
+		}
+		if lineIndent < indent {
+			break
+		}
+		if lineIndent == indent && isSeqMarker(content) {
+			break // the next item in this sequence
+		}
+		body = append(body, ln)
+		p.pos++
 	}
-	return resolveScalar(rest, no)
+	return body, nil
+}
+
+// parseItemBody parses the collected lines of one sequence item as a single
+// node. An item with no body is null. The node is parsed at the depth of its
+// first line, which may equal the dash's depth (aligned form) or be deeper.
+func parseItemBody(body []physLine, indent int) (any, error) {
+	sub := &parser{lines: body}
+	tok, err := sub.peek()
+	if err != nil {
+		return nil, err
+	}
+	if tok == nil {
+		return nil, nil // a bare "-" with nothing after it
+	}
+	v, err := sub.parseNode(tok.indent)
+	if err != nil {
+		return nil, err
+	}
+	leftover, err := sub.peek()
+	if err != nil {
+		return nil, err
+	}
+	if leftover != nil {
+		return nil, errorf(leftover.no, leftover.indent+1, "unexpected content in sequence item; check indentation")
+	}
+	return v, nil
 }
 
 // parseValue resolves the value attached to a "key:" (or an inline "- key:")
