@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/wow-look-at-my/yaml-fixed/yaml"
 )
 
 // run executes the root command with the given stdin and arguments, returning
@@ -52,6 +53,19 @@ func TestFromJSONKeepsIntegers(t *testing.T) {
 	out, err := run(t, `{"port":8080}`, "from-json")
 	require.NoError(t, err)
 	assert.Equal(t, "port: 8080\n", out)
+}
+
+// from-json parses JSON with the YAML parser itself (one parser, no separate
+// JSON path), so pretty-printed, space-indented, multi-line JSON converts too.
+func TestFromJSONPrettyPrinted(t *testing.T) {
+	prev := yaml.Warn
+	yaml.Warn = func(string) {} // silence the once-per-file space warning
+	t.Cleanup(func() { yaml.Warn = prev })
+
+	in := "{\n  \"a\": 1,\n  \"b\": [\"x\", \"y\"]\n}\n"
+	out, err := run(t, in, "from-json")
+	require.NoError(t, err)
+	assert.Equal(t, "a: 1\nb:\n\t- x\n\t- y\n", out)
 }
 
 func TestFmtCanonicalises(t *testing.T) {

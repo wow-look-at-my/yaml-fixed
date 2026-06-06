@@ -53,6 +53,10 @@ accepted -- with a single warning per file. Indent the JSON with tabs and the
 warning goes away. This applies *only* to JSON-style (flow) documents; ordinary
 block YAML still rejects space indentation as the error it ought to be.
 
+There is exactly one parser: `from-json` reads JSON with `yaml.Parse`, the same
+parser `to-json`, `validate`, and `fmt` use, rather than a separate JSON
+decoder. JSON in, JSON out, JSON converted -- all the same code path.
+
 Library users can redirect or silence the warning by replacing the package-level
 `yaml.Warn` hook (it defaults to writing one line to standard error):
 

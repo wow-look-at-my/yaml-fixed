@@ -70,5 +70,8 @@ It runs `go mod tidy`, `go vet`, tests with coverage, and the build. CI
   a top-level `{`/`[` document to `parseFlowDocument`, which joins the lines and
   parses them as one flow value. The flow parser treats line breaks as ordinary
   whitespace, so indentation is irrelevant and space-indented JSON is accepted
-  (warning once). Tab-indented JSON is the canonical, warning-free form.
+  (warning once). Tab-indented JSON is the canonical, warning-free form. The
+  `from-json` CLI command parses with `yaml.Parse` too -- not a separate
+  `encoding/json` decoder -- so there is a single JSON code path. (`to-json`
+  still uses `encoding/json` for output *encoding* only.)
 - Anchors/aliases, merge keys, and explicit tags are intentionally unsupported.
