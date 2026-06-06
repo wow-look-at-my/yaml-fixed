@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 
 	"github.com/spf13/cobra"
-	"github.com/wow-look-at-my/yaml-fixed/tabyaml"
+	"github.com/wow-look-at-my/yaml-fixed/yaml"
 )
 
 var toJSONCmd = &cobra.Command{
 	Use:   "to-json [file]",
-	Short: "Convert tab-YAML to JSON",
+	Short: "Convert YAML to JSON",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := readInput(cmd, args)
 		if err != nil {
 			return err
 		}
-		v, err := tabyaml.Parse(data)
+		v, err := yaml.Parse(data)
 		if err != nil {
 			return err
 		}

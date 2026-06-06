@@ -1,10 +1,10 @@
-package tabyaml
+package yaml
 
 import (
 	"strings"
 )
 
-// Parse decodes a single tab-YAML document into a generic Go value
+// Parse decodes a single YAML document into a generic Go value
 // (map[string]any, []any, string, int, float64, bool, or nil).
 //
 // An empty input (or one consisting only of blank lines and comments) decodes
@@ -25,7 +25,7 @@ func Parse(data []byte) (any, error) {
 	}
 }
 
-// ParseAll decodes every document in a tab-YAML stream. Documents are separated
+// ParseAll decodes every document in a YAML stream. Documents are separated
 // by a "---" line and may be terminated by a "...". Documents that contain no
 // content are skipped.
 func ParseAll(data []byte) ([]any, error) {

@@ -1,4 +1,4 @@
-package tabyaml
+package yaml
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRoundTrip marshals a value to tab-YAML and parses it back, expecting an
+// TestRoundTrip marshals a value to YAML and parses it back, expecting an
 // identical generic structure.
 func TestRoundTrip(t *testing.T) {
 	values := []any{

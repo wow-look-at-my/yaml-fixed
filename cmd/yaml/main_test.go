@@ -63,7 +63,7 @@ func TestFmtCanonicalises(t *testing.T) {
 
 func TestFmtWriteInPlace(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "doc.tyaml")
+	path := filepath.Join(dir, "doc.yaml")
 	require.NoError(t, os.WriteFile(path, []byte("b: 2\na: 1\n"), 0o644))
 
 	_, err := run(t, "", "fmt", "-w", path)
@@ -82,7 +82,7 @@ func TestFmtWriteRequiresFile(t *testing.T) {
 
 func TestReadFromFileArgument(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "in.tyaml")
+	path := filepath.Join(dir, "in.yaml")
 	require.NoError(t, os.WriteFile(path, []byte("k: v\n"), 0o644))
 
 	out, err := run(t, "", "to-json", path)
@@ -91,7 +91,7 @@ func TestReadFromFileArgument(t *testing.T) {
 }
 
 func TestMissingFile(t *testing.T) {
-	_, err := run(t, "", "validate", filepath.Join(t.TempDir(), "nope.tyaml"))
+	_, err := run(t, "", "validate", filepath.Join(t.TempDir(), "nope.yaml"))
 	require.Error(t, err)
 }
 

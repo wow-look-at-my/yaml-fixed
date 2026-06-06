@@ -1,17 +1,15 @@
 # yaml-fixed
 
-A YAML parser and emitter that uses tabs, **and only tabs**, for indentation.
+A YAML parser and emitter for Go.
 
-The YAML spec indents with spaces. That is a mistake. Indentation expresses one
-thing -- depth -- and a tab is the single character whose entire purpose is
-"advance one indentation level." Its width is a property of *your* editor, not
-of the file, so everyone reads the same document at whatever indent width they
-like without changing a byte. A space is a unit of horizontal text; holding it
-down N times to imitate one level of depth is an encoding accident. `yaml-fixed`
-treats that accident as a syntax error.
+It is an ordinary YAML library, with one difference: it does not have the bug
+where spaces are used for indentation. Indentation is done with tabs -- a line's
+depth is its number of leading tabs, and nothing else. Spaces after the tabs are
+alignment and never change the depth, and spaces with no preceding tab in the
+indentation region are the syntax error they ought to be.
 
 ```
-# This is valid tab-YAML (every indent below is a single TAB):
+# This is valid YAML (every indent below is a single TAB):
 server:
 	host: localhost
 	port: 8080
@@ -23,33 +21,25 @@ server:
 # This is rejected -- the indentation uses spaces:
 server:
   host: localhost
-# => tabyaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
+# => yaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
 ```
 
-Spaces are still perfectly legal everywhere they actually belong: inside scalar
-values (`name: Jane Doe`), after the `key:` separator, after a `-` marker,
-inside quotes, inside flow collections (`[1, 2, 3]`), and -- crucially -- as
-**alignment** after the leading tabs.
-
-## The one rule
-
-> **Tabs for indentation, spaces for alignment.** A line's depth is its number
-> of leading **tab** characters, and nothing else. Spaces after those tabs align
-> content (they never change the depth). Leading spaces with no preceding tab are
-> an error, and so is a tab placed after alignment spaces.
-
-A child node has strictly more tabs than its parent. That is the whole model.
+Spaces are still legal everywhere they actually belong: inside scalar values
+(`name: Jane Doe`), after the `key:` separator, after a `-` marker, inside
+quotes, inside flow collections (`[1, 2, 3]`), and as alignment after the
+leading tabs. A child node has strictly more tabs than its parent; that is the
+whole indentation model.
 
 ## Library
 
 ```go
-import "github.com/wow-look-at-my/yaml-fixed/tabyaml"
+import "github.com/wow-look-at-my/yaml-fixed/yaml"
 ```
 
 ### Parse into a generic value
 
 ```go
-v, err := tabyaml.Parse([]byte("a: 1\nb:\n\t- x\n\t- y\n"))
+v, err := yaml.Parse([]byte("a: 1\nb:\n\t- x\n\t- y\n"))
 // v == map[string]any{"a": 1, "b": []any{"x", "y"}}
 ```
 
@@ -67,16 +57,16 @@ type Config struct {
 }
 
 var cfg Config
-err := tabyaml.Unmarshal(src, &cfg)
+err := yaml.Unmarshal(src, &cfg)
 ```
 
 Fields are matched by the `yaml:"..."` tag, falling back to the lower-cased
 field name. `,omitempty` and `-` are honoured by the encoder.
 
-### Marshal (always tab-indented)
+### Marshal
 
 ```go
-out, err := tabyaml.Marshal(map[string]any{
+out, err := yaml.Marshal(map[string]any{
 	"server": map[string]any{"host": "localhost", "port": 8080},
 })
 // server:
@@ -90,20 +80,20 @@ quoted automatically, so `Marshal` then `Parse` round-trips.
 ## CLI
 
 ```
-go install github.com/wow-look-at-my/yaml-fixed/cmd/tabyaml@latest
+go install github.com/wow-look-at-my/yaml-fixed/cmd/yaml@latest
 ```
 
 | Command | Description |
 |---|---|
-| `tabyaml validate [file]` | Exit 0 if the input is well-formed tab-YAML, else report the line/column. |
-| `tabyaml fmt [file] [-w]` | Canonicalise: sort keys, re-indent with tabs. `-w` rewrites the file. |
-| `tabyaml to-json [file]` | Convert tab-YAML to JSON. |
-| `tabyaml from-json [file]` | Convert JSON to tab-YAML. |
+| `yaml validate [file]` | Exit 0 if the input is well-formed YAML, else report the line/column. |
+| `yaml fmt [file] [-w]` | Canonicalise: sort keys, re-indent with tabs. `-w` rewrites the file. |
+| `yaml to-json [file]` | Convert YAML to JSON. |
+| `yaml from-json [file]` | Convert JSON to YAML. |
 
 Every command reads the named file, or standard input when given no file (or `-`).
 
 ```console
-$ printf 'server:\n\thost: localhost\n' | tabyaml to-json
+$ printf 'server:\n\thost: localhost\n' | yaml to-json
 {
   "server": {
     "host": "localhost"
@@ -113,8 +103,7 @@ $ printf 'server:\n\thost: localhost\n' | tabyaml to-json
 
 ## Sequences of mappings
 
-This is where "tabs for indentation, spaces for alignment" earns its keep. The
-item is indented with a tab; the keys are aligned past the `- ` marker with
+The item is indented with a tab; the keys are aligned past the `- ` marker with
 spaces. `name` and `age` carry the same single tab, so they are siblings:
 
 ```
@@ -173,5 +162,5 @@ tests, and reports coverage):
 $ go-toolchain
 ```
 
-- Library: `tabyaml/`
-- CLI: `cmd/tabyaml/`
+- Library: `yaml/`
+- CLI: `cmd/yaml/`

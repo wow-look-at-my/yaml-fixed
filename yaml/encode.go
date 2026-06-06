@@ -1,4 +1,4 @@
-package tabyaml
+package yaml
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Marshal serialises a Go value as tab-YAML. Mappings are emitted with their
+// Marshal serialises a Go value as YAML. Mappings are emitted with their
 // keys sorted; structs follow field declaration order. Nested values are
 // indented with tabs, and sequences of mappings use the expanded (dash-on-its-
 // own-line) form so the result parses back through Parse.
@@ -147,8 +147,8 @@ func writeSeq(b *strings.Builder, v reflect.Value, indent int) error {
 
 // writeSeqItem emits one sequence element. A non-empty mapping uses the compact
 // aligned form -- the first pair shares the dash line, later pairs align past
-// the marker with spaces -- which is the whole point of tab-YAML: tabs set
-// depth, spaces handle alignment.
+// the marker with spaces, so the tab sets the depth and the spaces handle the
+// alignment.
 //
 //	- name: Alice
 //	  age: 30
@@ -269,7 +269,7 @@ func emptyLiteral(v reflect.Value) string {
 	return "[]"
 }
 
-// formatScalar renders a scalar reflect.Value as tab-YAML text.
+// formatScalar renders a scalar reflect.Value as YAML text.
 func formatScalar(v reflect.Value) (string, error) {
 	if !v.IsValid() {
 		return "null", nil
@@ -286,7 +286,7 @@ func formatScalar(v reflect.Value) (string, error) {
 	case reflect.String:
 		return formatString(v.String()), nil
 	default:
-		return "", fmt.Errorf("tabyaml: cannot marshal value of type %s", v.Type())
+		return "", fmt.Errorf("yaml: cannot marshal value of type %s", v.Type())
 	}
 }
 

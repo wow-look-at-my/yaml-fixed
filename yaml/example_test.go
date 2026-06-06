@@ -1,9 +1,9 @@
-package tabyaml_test
+package yaml_test
 
 import (
 	"fmt"
 
-	"github.com/wow-look-at-my/yaml-fixed/tabyaml"
+	"github.com/wow-look-at-my/yaml-fixed/yaml"
 )
 
 func ExampleUnmarshal() {
@@ -15,7 +15,7 @@ func ExampleUnmarshal() {
 	// Note the tabs: indentation is tabs, never spaces.
 	src := "name: demo\nport: 9000\nmodules:\n\t- auth\n\t- cache\n"
 	var cfg Config
-	if err := tabyaml.Unmarshal([]byte(src), &cfg); err != nil {
+	if err := yaml.Unmarshal([]byte(src), &cfg); err != nil {
 		panic(err)
 	}
 	fmt.Printf("%s on %d with %v\n", cfg.Name, cfg.Port, cfg.Modules)
@@ -24,7 +24,7 @@ func ExampleUnmarshal() {
 
 func ExampleParse_rejectsSpaces() {
 	// Two spaces of indentation (no leading tab) is a syntax error.
-	_, err := tabyaml.Parse([]byte("server:\n  host: localhost"))
+	_, err := yaml.Parse([]byte("server:\n  host: localhost"))
 	fmt.Println(err)
-	// Output: tabyaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
+	// Output: yaml: line 2, column 1: spaces cannot be used for indentation; indent with tabs (spaces only align after a tab)
 }

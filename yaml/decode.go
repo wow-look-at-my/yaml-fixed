@@ -1,11 +1,11 @@
-package tabyaml
+package yaml
 
 import (
 	"reflect"
 	"strings"
 )
 
-// Unmarshal parses a single tab-YAML document and stores the result in the
+// Unmarshal parses a single YAML document and stores the result in the
 // value pointed to by v. Mappings decode into structs (matching the `yaml` tag
 // or the lower-cased field name) or maps; sequences decode into slices; scalars
 // decode into the matching Go scalar type or into an interface{}.
@@ -223,7 +223,7 @@ func kindOf(src any) string {
 	}
 }
 
-// fieldInfo describes a struct field's tab-YAML name and options.
+// fieldInfo describes a struct field's YAML name and options.
 type fieldInfo struct {
 	name      string
 	index     int
