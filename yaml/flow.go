@@ -26,8 +26,13 @@ type flow struct {
 }
 
 func (f *flow) skipSpace() {
-	for f.i < len(f.s) && (f.s[f.i] == ' ' || f.s[f.i] == '\t') {
-		f.i++
+	for f.i < len(f.s) {
+		switch f.s[f.i] {
+		case ' ', '\t', '\n', '\r':
+			f.i++
+		default:
+			return
+		}
 	}
 }
 
@@ -159,12 +164,14 @@ func (f *flow) scalarString() (string, error) {
 }
 
 // plainToken reads an unquoted scalar up to the next flow delimiter (',', ']',
-// '}', or ':' followed by a separator) and returns it trimmed.
+// '}', a line break, or ':' followed by a separator) and returns it trimmed. A
+// line break ends the token so that flow collections may span several lines
+// (as pretty-printed JSON does).
 func (f *flow) plainToken() string {
 	start := f.i
 	for f.i < len(f.s) {
 		c := f.s[f.i]
-		if c == ',' || c == ']' || c == '}' {
+		if c == ',' || c == ']' || c == '}' || c == '\n' || c == '\r' {
 			break
 		}
 		if c == ':' && (f.i+1 >= len(f.s) || f.s[f.i+1] == ' ' || f.s[f.i+1] == '\t' || f.s[f.i+1] == ',' || f.s[f.i+1] == ']' || f.s[f.i+1] == '}') {

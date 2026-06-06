@@ -30,6 +30,36 @@ quotes, inside flow collections (`[1, 2, 3]`), and as alignment after the
 leading tabs. A child node has strictly more tabs than its parent; that is the
 whole indentation model.
 
+### Consuming JSON
+
+There is one principled exception: **JSON**. YAML is a superset of JSON, and a
+JSON document is just a flow collection -- its structure comes from its
+delimiters (`{}`, `[]`, `,`, `:`), not from indentation, so it parses no matter
+what whitespace is present. A document whose top-level value starts with `{` or
+`[` is therefore consumed as one flow value, even when it is the usual
+space-indented, multi-line, pretty-printed JSON:
+
+```console
+$ printf '{\n  "name": "Ada",\n  "port": 8080\n}\n' | yaml to-json
+yaml: warning: accepted spaces for indentation while consuming JSON; JSON structure comes from its delimiters, not whitespace, so the indentation was ignored (indent with tabs to silence this)
+{
+  "name": "Ada",
+  "port": 8080
+}
+```
+
+Because the spaces genuinely cannot change a JSON document's meaning, they are
+accepted -- with a single warning per file. Indent the JSON with tabs and the
+warning goes away. This applies *only* to JSON-style (flow) documents; ordinary
+block YAML still rejects space indentation as the error it ought to be.
+
+Library users can redirect or silence the warning by replacing the package-level
+`yaml.Warn` hook (it defaults to writing one line to standard error):
+
+```go
+yaml.Warn = func(msg string) {} // silence
+```
+
 ## Library
 
 ```go
@@ -143,7 +173,8 @@ dash-on-its-own-line form) so output always re-parses.
 
 - Block mappings and block sequences, nested with tabs.
 - Typed plain scalars, single- and double-quoted scalars (with escapes).
-- Flow collections: `[a, b]` and `{a: 1, b: 2}`.
+- Flow collections: `[a, b]` and `{a: 1, b: 2}`, on one line or spanning several
+  (so whole JSON documents parse; see [Consuming JSON](#consuming-json)).
 - Block scalars: literal `|` and folded `>`, with `-`/`+` chomping.
 - `#` comments (whole-line and trailing).
 - Multiple documents separated by `---`, terminated by `...`.
