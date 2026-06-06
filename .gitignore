@@ -1,1 +1,15 @@
+# Binaries
+/dist/
+*.exe
+*.test
+*.out
 
+# Go workspace / vendor
+/vendor/
+go.work
+go.work.sum
+
+# Coverage
+coverage.txt
+coverage.html
+/build/
