@@ -43,27 +43,30 @@ func TestToJSON(t *testing.T) {
 	assert.JSONEq(t, `{"a":1,"b":["x","y"]}`, out)
 }
 
-func TestFromJSON(t *testing.T) {
-	out, err := run(t, `{"a":1,"b":["x","y"]}`, "from-json")
+// fmt is the canonical "produce YAML" command. Because the parser reads JSON
+// natively (a JSON document is just a flow collection), fmt converts JSON to
+// YAML as well -- which is why there is no separate from-json command.
+func TestFmtConvertsJSON(t *testing.T) {
+	out, err := run(t, `{"a":1,"b":["x","y"]}`, "fmt")
 	require.NoError(t, err)
 	assert.Equal(t, "a: 1\nb:\n\t- x\n\t- y\n", out)
 }
 
-func TestFromJSONKeepsIntegers(t *testing.T) {
-	out, err := run(t, `{"port":8080}`, "from-json")
+func TestFmtKeepsIntegers(t *testing.T) {
+	out, err := run(t, `{"port":8080}`, "fmt")
 	require.NoError(t, err)
 	assert.Equal(t, "port: 8080\n", out)
 }
 
-// from-json parses JSON with the YAML parser itself (one parser, no separate
-// JSON path), so pretty-printed, space-indented, multi-line JSON converts too.
-func TestFromJSONPrettyPrinted(t *testing.T) {
+// Pretty-printed, space-indented, multi-line JSON converts too (with the
+// once-per-file space warning, silenced here).
+func TestFmtConvertsPrettyPrintedJSON(t *testing.T) {
 	prev := yaml.Warn
-	yaml.Warn = func(string) {} // silence the once-per-file space warning
+	yaml.Warn = func(string) {}
 	t.Cleanup(func() { yaml.Warn = prev })
 
 	in := "{\n  \"a\": 1,\n  \"b\": [\"x\", \"y\"]\n}\n"
-	out, err := run(t, in, "from-json")
+	out, err := run(t, in, "fmt")
 	require.NoError(t, err)
 	assert.Equal(t, "a: 1\nb:\n\t- x\n\t- y\n", out)
 }
@@ -109,7 +112,7 @@ func TestMissingFile(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestInvalidJSON(t *testing.T) {
-	_, err := run(t, "{not json", "from-json")
+func TestInvalidInputErrors(t *testing.T) {
+	_, err := run(t, "{not json", "fmt")
 	require.Error(t, err)
 }

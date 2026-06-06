@@ -53,9 +53,10 @@ accepted -- with a single warning per file. Indent the JSON with tabs and the
 warning goes away. This applies *only* to JSON-style (flow) documents; ordinary
 block YAML still rejects space indentation as the error it ought to be.
 
-There is exactly one parser: `from-json` reads JSON with `yaml.Parse`, the same
-parser `to-json`, `validate`, and `fmt` use, rather than a separate JSON
-decoder. JSON in, JSON out, JSON converted -- all the same code path.
+Since the parser reads JSON natively, there is no separate JSON importer:
+`fmt` converts JSON to YAML (it reads JSON, emits canonical YAML) and `to-json`
+re-emits it as JSON. Reading JSON is just reading YAML, so a `from-json` command
+would be as redundant as a `from-yaml` -- one parser feeds every command.
 
 Library users can redirect or silence the warning by replacing the package-level
 `yaml.Warn` hook (it defaults to writing one line to standard error):
@@ -119,10 +120,9 @@ go install github.com/wow-look-at-my/yaml-fixed/cmd/yaml@latest
 
 | Command | Description |
 |---|---|
-| `yaml validate [file]` | Exit 0 if the input is well-formed YAML, else report the line/column. |
-| `yaml fmt [file] [-w]` | Canonicalise: sort keys, re-indent with tabs. `-w` rewrites the file. |
-| `yaml to-json [file]` | Convert YAML to JSON. |
-| `yaml from-json [file]` | Convert JSON to YAML. |
+| `yaml validate [file]` | Exit 0 if the input is well-formed, else report the line/column. |
+| `yaml fmt [file] [-w]` | Emit canonical YAML: sort keys, re-indent with tabs. Reads YAML or JSON (so it doubles as JSON-to-YAML). `-w` rewrites the file. |
+| `yaml to-json [file]` | Emit JSON. Reads YAML or JSON. |
 
 Every command reads the named file, or standard input when given no file (or `-`).
 
