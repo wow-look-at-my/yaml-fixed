@@ -28,14 +28,37 @@ func Parse(data []byte) (any, error) {
 // ParseAll decodes every document in a YAML stream. Documents are separated
 // by a "---" line and may be terminated by a "...". Documents that contain no
 // content are skipped.
+//
+// A document whose top-level value is a flow collection ("{...}" or "[...]") is
+// JSON-style: its structure is carried entirely by the flow delimiters, so it
+// parses no matter how (or whether) its lines are indented. Such a document may
+// therefore use spaces for indentation -- the one place this library tolerates
+// them -- because the indentation cannot change the meaning. When a JSON
+// document does indent with spaces, ParseAll calls Warn once for the whole
+// stream; indent the JSON with tabs to silence it.
 func ParseAll(data []byte) ([]any, error) {
 	all := splitLines(data)
 	docs := splitDocuments(all)
 
 	var out []any
+	warned := false
 	for _, doc := range docs {
 		p := &parser{lines: doc}
 		if !p.hasContent() {
+			continue
+		}
+		if documentIsFlow(doc) {
+			v, spaced, err := parseFlowDocument(doc)
+			if err != nil {
+				return nil, err
+			}
+			if spaced && !warned {
+				warned = true
+				Warn("accepted spaces for indentation while consuming JSON; JSON " +
+					"structure comes from its delimiters, not whitespace, so the " +
+					"indentation was ignored (indent with tabs to silence this)")
+			}
+			out = append(out, v)
 			continue
 		}
 		v, err := p.parseDocument()

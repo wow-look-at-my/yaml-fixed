@@ -12,7 +12,7 @@ var fmtWrite bool
 
 var fmtCmd = &cobra.Command{
 	Use:   "fmt [file]",
-	Short: "Canonicalise YAML (sort keys, normalise indentation to tabs)",
+	Short: "Emit canonical YAML: sort keys, indent with tabs (reads YAML or JSON)",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := readInput(cmd, args)

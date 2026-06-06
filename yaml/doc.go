@@ -42,6 +42,18 @@
 // give it another tab. A scalar (- value), a flow (- [1, 2]) and a dash on its
 // own line (with the body on following lines) are all accepted too.
 //
+// # Consuming JSON
+//
+// YAML is a superset of JSON, and a JSON document is just a flow collection (or
+// a scalar): its structure is carried entirely by the delimiters {}, [], ","
+// and ":", never by indentation. A document whose top-level value begins with
+// "{" or "[" is therefore parsed as one flow value regardless of how its lines
+// are laid out -- including pretty-printed JSON that indents with spaces, the
+// one place this library tolerates them, because the indentation cannot change
+// the meaning. When such a document does use space indentation, the parser
+// calls Warn once for the whole input; indent the JSON with tabs to silence it.
+// Ordinary (block) YAML is unaffected: spaces there remain a syntax error.
+//
 // # Not supported
 //
 // Anchors/aliases (&, *), the merge key (<<), explicit tags (!!str) and
