@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 
 	"github.com/spf13/cobra"
-	"github.com/wow-look-at-my/yaml-fixed/tabyaml"
+	"github.com/wow-look-at-my/yaml-fixed/yaml"
 )
 
 var fromJSONCmd = &cobra.Command{
 	Use:   "from-json [file]",
-	Short: "Convert JSON to tab-YAML",
+	Short: "Convert JSON to YAML",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := readInput(cmd, args)
@@ -23,7 +23,7 @@ var fromJSONCmd = &cobra.Command{
 		if err := dec.Decode(&v); err != nil {
 			return err
 		}
-		out, err := tabyaml.Marshal(normalizeJSON(v))
+		out, err := yaml.Marshal(normalizeJSON(v))
 		if err != nil {
 			return err
 		}
@@ -33,7 +33,7 @@ var fromJSONCmd = &cobra.Command{
 }
 
 // normalizeJSON converts the json.Number values produced by a number-preserving
-// decoder into the int/float64 values that tabyaml.Marshal understands, so that
+// decoder into the int/float64 values that yaml.Marshal understands, so that
 // JSON integers do not turn into "1.0"-style floats.
 func normalizeJSON(v any) any {
 	switch t := v.(type) {

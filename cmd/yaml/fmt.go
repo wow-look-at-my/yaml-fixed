@@ -5,25 +5,25 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/wow-look-at-my/yaml-fixed/tabyaml"
+	"github.com/wow-look-at-my/yaml-fixed/yaml"
 )
 
 var fmtWrite bool
 
 var fmtCmd = &cobra.Command{
 	Use:   "fmt [file]",
-	Short: "Canonicalise tab-YAML (sort keys, normalise indentation to tabs)",
+	Short: "Canonicalise YAML (sort keys, normalise indentation to tabs)",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		data, err := readInput(cmd, args)
 		if err != nil {
 			return err
 		}
-		v, err := tabyaml.Parse(data)
+		v, err := yaml.Parse(data)
 		if err != nil {
 			return err
 		}
-		out, err := tabyaml.Marshal(v)
+		out, err := yaml.Marshal(v)
 		if err != nil {
 			return err
 		}

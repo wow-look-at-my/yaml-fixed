@@ -1,4 +1,4 @@
-package tabyaml
+package yaml
 
 import (
 	"testing"

@@ -1,25 +1,15 @@
-// Package tabyaml implements a YAML parser and emitter that uses tabs, and
-// only tabs, for indentation.
+// Package yaml implements a YAML parser and emitter for Go.
 //
-// # Why tabs
-//
-// Indentation expresses one thing: depth. A tab is the one character whose
-// entire job is "advance to the next indentation stop." Its on-screen width is
-// a property of the reader's environment, not of the file, so every developer
-// can view the same document at the indent width they prefer without touching a
-// byte. A space is a unit of horizontal text; pressing it N times to fake an
-// indentation level is an encoding accident, not a design. tabyaml treats that
-// accident as an error.
-//
-// The rule is therefore simple and absolute: tabs are for indentation, spaces
-// are for alignment. A line's structural depth is its number of leading TAB
-// characters, and nothing else. After those tabs you may add spaces to align
-// content -- for instance to line a mapping up past a "- " marker -- and those
-// spaces never change the depth. What is forbidden is using spaces AS
-// indentation: leading spaces with no preceding tab are a syntax error, as is a
-// tab placed after alignment spaces (indent first, then align). Spaces are
-// otherwise perfectly legal -- inside scalar values, after the "key:" separator,
-// after a "-" sequence marker, inside quotes, and inside flow collections.
+// It is an ordinary YAML library with one deliberate difference from most
+// others: indentation is done with tabs, not spaces. A line's structural depth
+// is its number of leading TAB characters, and nothing else. After those tabs
+// you may add spaces to align content -- for instance to line a mapping up past
+// a "- " marker -- and those spaces never change the depth. Using spaces as
+// indentation is the error it ought to be: leading spaces with no preceding tab
+// are a syntax error, as is a tab placed after alignment spaces (indent first,
+// then align). Spaces are otherwise perfectly legal -- inside scalar values,
+// after the "key:" separator, after a "-" sequence marker, inside quotes, and
+// inside flow collections.
 //
 // # Supported syntax
 //
@@ -56,4 +46,4 @@
 //
 // Anchors/aliases (&, *), the merge key (<<), explicit tags (!!str) and
 // directives other than being skipped (%YAML, %TAG) are intentionally omitted.
-package tabyaml
+package yaml

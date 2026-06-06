@@ -4,17 +4,18 @@ Guidance for working in this repository.
 
 ## What this is
 
-`yaml-fixed` is a YAML parser/emitter (Go) whose defining rule is: **tabs for
-indentation, spaces for alignment.** A line's structural depth is its count of
-leading tabs and nothing else; spaces after the tabs are alignment and never
-change depth. Leading spaces with no preceding tab are a syntax error, as is a
-tab after alignment spaces. Spaces are otherwise legal inside values, after
-`key:`/`-` separators, in quotes, and in flow collections. If you change parsing
-behaviour, keep that rule absolute (`measure` in `parse.go` enforces it).
+`yaml-fixed` is a YAML parser/emitter (Go). It is an ordinary YAML library
+except in one respect: indentation is done with tabs, not spaces. A line's
+structural depth is its count of leading tabs and nothing else; spaces after the
+tabs are alignment and never change depth. Leading spaces with no preceding tab
+are a syntax error, as is a tab after alignment spaces. Spaces are otherwise
+legal inside values, after `key:`/`-` separators, in quotes, and in flow
+collections. If you change parsing behaviour, keep that rule absolute (`measure`
+in `parse.go` enforces it).
 
 ## Layout
 
-- `tabyaml/` -- the library package (`package tabyaml`).
+- `yaml/` -- the library package (`package yaml`).
   - `parse.go` -- line scanning, tab-indent enforcement (`measure`), and the
     recursive block parser (`Parse`, `ParseAll`).
   - `scalar.go` -- scalar typing (1.2 core schema), quoting/unquoting, comments.
@@ -24,7 +25,7 @@ behaviour, keep that rule absolute (`measure` in `parse.go` enforces it).
   - `decode.go` -- `Unmarshal` (reflection into structs/maps/slices) and shared
     reflection helpers.
   - `errors.go` -- `SyntaxError` (line/col) and `TypeError`.
-- `cmd/tabyaml/` -- the cobra CLI. One command per file, each self-registering
+- `cmd/yaml/` -- the cobra CLI. One command per file, each self-registering
   via `init()`; `main.go` only calls `Execute()`.
 
 ## Build / test
