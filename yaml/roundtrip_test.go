@@ -12,18 +12,18 @@ import (
 func TestRoundTrip(t *testing.T) {
 	values := []any{
 		map[string]any{
-			"name":		"service",
-			"port":		8080,
-			"enabled":	true,
-			"ratio":	0.5,
+			"name":    "service",
+			"port":    8080,
+			"enabled": true,
+			"ratio":   0.5,
 			"nested": map[string]any{
 				"deep": map[string]any{"x": 1, "y": 2},
 			},
-			"list":		[]any{1, 2, 3},
-			"items":	[]any{map[string]any{"k": "v"}, map[string]any{"k": "w"}},
-			"empty":	map[string]any{},
-			"none":		nil,
-			"tricky":	"true",	// must be quoted to survive
+			"list":   []any{1, 2, 3},
+			"items":  []any{map[string]any{"k": "v"}, map[string]any{"k": "w"}},
+			"empty":  map[string]any{},
+			"none":   nil,
+			"tricky": "true", // must be quoted to survive
 		},
 	}
 	for _, v := range values {
