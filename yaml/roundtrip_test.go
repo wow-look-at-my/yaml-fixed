@@ -35,7 +35,7 @@ func TestRoundTrip(t *testing.T) {
 
 		got, err := Parse(data)
 		require.NoError(t, err, "yaml:\n%s", data)
-		assert.Equal(t, v, got, "yaml:\n%s", data)
+		assert.Equal(t, v, toPlainInterface(got), "yaml:\n%s", data)
 	}
 }
 

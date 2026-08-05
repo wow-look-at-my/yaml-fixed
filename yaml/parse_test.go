@@ -36,7 +36,7 @@ func TestParseScalars(t *testing.T) {
 func TestParseMapping(t *testing.T) {
 	got, err := Parse([]byte("name: Ada\nage: 36\nactive: true"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"name": "Ada", "age": 36, "active": true}, got)
+	assert.Equal(t, map[string]any{"name": "Ada", "age": 36, "active": true}, toPlainInterface(got))
 }
 
 func TestParseNestedMappingTabs(t *testing.T) {
@@ -50,13 +50,13 @@ func TestParseNestedMappingTabs(t *testing.T) {
 			"tls":  map[string]any{"enabled": true},
 		},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 }
 
 func TestParseSequenceScalars(t *testing.T) {
 	got, err := Parse([]byte("- apple\n- banana\n- 3"))
 	require.NoError(t, err)
-	assert.Equal(t, []any{"apple", "banana", 3}, got)
+	assert.Equal(t, []any{"apple", "banana", 3}, toPlainInterface(got))
 }
 
 func TestParseSequenceOfMappingsExpanded(t *testing.T) {
@@ -69,7 +69,7 @@ func TestParseSequenceOfMappingsExpanded(t *testing.T) {
 			map[string]any{"name": "Bob", "age": 25},
 		},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 }
 
 func TestParseSequenceOfMappingsAligned(t *testing.T) {
@@ -84,7 +84,7 @@ func TestParseSequenceOfMappingsAligned(t *testing.T) {
 			map[string]any{"name": "Bob", "age": 25},
 		},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 }
 
 func TestParseSequenceInlineFirstKeyAligned(t *testing.T) {
@@ -98,7 +98,7 @@ func TestParseSequenceInlineFirstKeyAligned(t *testing.T) {
 			map[string]any{"name": "Bob", "age": 25},
 		},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 }
 
 func TestAlignmentSpacesAreNotDepth(t *testing.T) {
@@ -107,14 +107,14 @@ func TestAlignmentSpacesAreNotDepth(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"items": []any{
 		map[string]any{"key": "v", "other": "w"},
-	}}, got)
+	}}, toPlainInterface(got))
 
 	// sub indented one more TAB than key => child of key; other stays a sibling.
 	got, err = Parse([]byte("items:\n\t- key:\n\t\tsub: 1\n\t  other: w\n"))
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"items": []any{
 		map[string]any{"key": map[string]any{"sub": 1}, "other": "w"},
-	}}, got)
+	}}, toPlainInterface(got))
 }
 
 func TestTabAfterSpacesRejected(t *testing.T) {
@@ -128,32 +128,32 @@ func TestTabAfterSpacesRejected(t *testing.T) {
 func TestParseInlinePairItem(t *testing.T) {
 	got, err := Parse([]byte("- key: value\n- 7"))
 	require.NoError(t, err)
-	assert.Equal(t, []any{map[string]any{"key": "value"}, 7}, got)
+	assert.Equal(t, []any{map[string]any{"key": "value"}, 7}, toPlainInterface(got))
 }
 
 func TestParseNestedSequenceUnderKey(t *testing.T) {
 	got, err := Parse([]byte("items:\n\t- a\n\t- b"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"items": []any{"a", "b"}}, got)
+	assert.Equal(t, map[string]any{"items": []any{"a", "b"}}, toPlainInterface(got))
 }
 
 func TestParseNullValues(t *testing.T) {
 	got, err := Parse([]byte("a:\nb: ~\nc: null"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": nil, "b": nil, "c": nil}, got)
+	assert.Equal(t, map[string]any{"a": nil, "b": nil, "c": nil}, toPlainInterface(got))
 }
 
 func TestParseComments(t *testing.T) {
 	in := "# leading comment\nname: Ada # trailing\n\t# indented comment is fine if tabbed\nage: 1"
 	got, err := Parse([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"name": "Ada", "age": 1}, got)
+	assert.Equal(t, map[string]any{"name": "Ada", "age": 1}, toPlainInterface(got))
 }
 
 func TestBlankLinesIgnored(t *testing.T) {
 	got, err := Parse([]byte("a: 1\n\n\nb: 2\n   \n"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": 1, "b": 2}, got)
+	assert.Equal(t, map[string]any{"a": 1, "b": 2}, toPlainInterface(got))
 }
 
 // --- The headline behaviour: spaces are rejected as indentation. ---
@@ -184,7 +184,7 @@ func TestSpacesAllowedInValues(t *testing.T) {
 		"list":     []any{1, 2, 3},
 		"pair":     map[string]any{"a": 1, "b": 2},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 }
 
 func TestErrorLineNumbers(t *testing.T) {
@@ -199,7 +199,7 @@ func TestParseMultiDocument(t *testing.T) {
 	docs, err := ParseAll([]byte("---\na: 1\n---\nb: 2\n...\n"))
 	require.NoError(t, err)
 	want := []any{map[string]any{"a": 1}, map[string]any{"b": 2}}
-	assert.Equal(t, want, docs)
+	assert.Equal(t, want, toPlainInterface(docs))
 }
 
 func TestParseInlineDocumentMarker(t *testing.T) {
@@ -226,23 +226,23 @@ func TestMappingThenSequenceMismatch(t *testing.T) {
 func TestDirectivesSkipped(t *testing.T) {
 	got, err := Parse([]byte("%YAML 1.2\n---\nok: true"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"ok": true}, got)
+	assert.Equal(t, map[string]any{"ok": true}, toPlainInterface(got))
 }
 
 func TestCRLFNormalised(t *testing.T) {
 	got, err := Parse([]byte("a: 1\r\nb:\r\n\tc: 2\r\n"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": 1, "b": map[string]any{"c": 2}}, got)
+	assert.Equal(t, map[string]any{"a": 1, "b": map[string]any{"c": 2}}, toPlainInterface(got))
 }
 
 func TestQuotedKeyWithColon(t *testing.T) {
 	got, err := Parse([]byte(`"a: b": value`))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a: b": "value"}, got)
+	assert.Equal(t, map[string]any{"a: b": "value"}, toPlainInterface(got))
 }
 
 func TestValueWithColon(t *testing.T) {
 	got, err := Parse([]byte("time: 12:30:00"))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"time": "12:30:00"}, got)
+	assert.Equal(t, map[string]any{"time": "12:30:00"}, toPlainInterface(got))
 }

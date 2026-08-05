@@ -87,7 +87,7 @@ func (f *flow) seq() (any, error) {
 
 func (f *flow) mapping() (any, error) {
 	f.i++ // consume '{'
-	out := map[string]any{}
+	out := newMap()
 	f.skipSpace()
 	if f.i < len(f.s) && f.s[f.i] == '}' {
 		f.i++
@@ -111,10 +111,10 @@ func (f *flow) mapping() (any, error) {
 				}
 			}
 		}
-		if _, dup := out[key]; dup {
+		if _, dup := out.Get(key); dup {
 			return nil, errorf(f.no, 0, "duplicate mapping key %q in flow mapping", key)
 		}
-		out[key] = val
+		out.set(key, val)
 		f.skipSpace()
 		if f.i >= len(f.s) {
 			return nil, errorf(f.no, 0, "unterminated flow mapping")

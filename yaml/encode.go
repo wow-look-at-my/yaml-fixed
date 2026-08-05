@@ -25,6 +25,9 @@ func Marshal(v any) ([]byte, error) {
 // indent tabs.
 func writeNode(b *strings.Builder, v reflect.Value, indent int) error {
 	v = indirect(v)
+	if m, ok := mapFromValue(v); ok {
+		return writeOrderedMap(b, m, indent)
+	}
 	switch {
 	case !v.IsValid():
 		writeTabs(b, indent)
@@ -46,6 +49,42 @@ func writeNode(b *strings.Builder, v reflect.Value, indent int) error {
 		b.WriteByte('\n')
 		return nil
 	}
+}
+
+// mapFromValue reports whether v (a Map or *Map, however it arrived --
+// concrete, boxed in an interface{}, or already pointer-stripped by
+// indirect) holds a parsed ordered mapping, returning it as *Map.
+func mapFromValue(v reflect.Value) (*Map, bool) {
+	if !v.IsValid() || !v.CanInterface() {
+		return nil, false
+	}
+	switch m := v.Interface().(type) {
+	case *Map:
+		return m, true
+	case Map:
+		return &m, true
+	}
+	return nil, false
+}
+
+// writeOrderedMap emits a parsed *Map's entries in their original declaration
+// order, rather than the alphabetical order writeMap uses for a plain Go map
+// (which has no order of its own to preserve).
+func writeOrderedMap(b *strings.Builder, m *Map, indent int) error {
+	if m == nil || m.Len() == 0 {
+		writeTabs(b, indent)
+		b.WriteString("{}\n")
+		return nil
+	}
+	for _, k := range m.Keys {
+		writeTabs(b, indent)
+		b.WriteString(formatKey(k))
+		b.WriteByte(':')
+		if err := writeAfterColon(b, reflect.ValueOf(m.Values[k]), indent); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // entry is one mapping key/value pair, ready to emit.
@@ -87,8 +126,16 @@ func structEntries(v reflect.Value) []entry {
 	return es
 }
 
-// entriesOf returns the mapping entries of v when it is a map or struct.
+// entriesOf returns the mapping entries of v when it is a map, struct, or a
+// parsed *Map -- in the *Map's own declaration order, never re-sorted.
 func entriesOf(v reflect.Value) ([]entry, bool, error) {
+	if m, ok := mapFromValue(v); ok {
+		es := make([]entry, len(m.Keys))
+		for i, k := range m.Keys {
+			es[i] = entry{k, reflect.ValueOf(m.Values[k])}
+		}
+		return es, true, nil
+	}
 	switch v.Kind() {
 	case reflect.Map:
 		es, err := mapEntries(v)

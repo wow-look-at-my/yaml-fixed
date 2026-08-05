@@ -270,7 +270,7 @@ func (p *parser) parseNode(indent int) (any, error) {
 }
 
 func (p *parser) parseMapping(indent int) (any, error) {
-	m := map[string]any{}
+	m := newMap()
 	for {
 		tok, err := p.peek()
 		if err != nil {
@@ -294,7 +294,7 @@ func (p *parser) parseMapping(indent int) (any, error) {
 		if !ok {
 			return nil, errorf(tok.no, indent+1, "expected a \"key: value\" mapping entry")
 		}
-		if _, dup := m[key]; dup {
+		if _, dup := m.Get(key); dup {
 			return nil, errorf(tok.no, indent+1, "duplicate mapping key %q", key)
 		}
 		p.next()
@@ -302,7 +302,7 @@ func (p *parser) parseMapping(indent int) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		m[key] = value
+		m.set(key, value)
 	}
 	return m, nil
 }
