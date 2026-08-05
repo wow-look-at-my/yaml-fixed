@@ -402,6 +402,13 @@ func parseItemBody(body []physLine, indent int) (any, error) {
 // given the inline text after the colon. When the inline text is empty the
 // value is the block indented one or more tabs deeper, or null.
 func (p *parser) parseValue(inline string, parentIndent, no int) (any, error) {
+	if strings.HasPrefix(inline, "#") {
+		// A bare trailing comment ("key: # why") carries no inline value --
+		// same as "key:" alone, the value comes from the following block (or
+		// is null). splitMapping only trims whitespace around the colon, so
+		// this is the one place that text reaches parseValue unstripped.
+		inline = ""
+	}
 	if inline == "" {
 		child, err := p.peek()
 		if err != nil {

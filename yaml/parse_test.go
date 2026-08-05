@@ -150,6 +150,20 @@ func TestParseComments(t *testing.T) {
 	assert.Equal(t, map[string]any{"name": "Ada", "age": 1}, toPlainInterface(got))
 }
 
+func TestParseKeyWithOnlyTrailingCommentDescendsIntoBlock(t *testing.T) {
+	in := "shared: # a comment, no inline value\n\tfiles:\n\t\ta.txt: content\n"
+	got, err := Parse([]byte(in))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"shared": map[string]any{"files": map[string]any{"a.txt": "content"}}}, toPlainInterface(got))
+}
+
+func TestParseKeyWithOnlyTrailingCommentAndNoBlockIsNull(t *testing.T) {
+	in := "a: # nothing follows\nb: 1"
+	got, err := Parse([]byte(in))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"a": nil, "b": 1}, toPlainInterface(got))
+}
+
 func TestBlankLinesIgnored(t *testing.T) {
 	got, err := Parse([]byte("a: 1\n\n\nb: 2\n   \n"))
 	require.NoError(t, err)
