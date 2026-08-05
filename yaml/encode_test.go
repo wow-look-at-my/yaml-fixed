@@ -1,15 +1,15 @@
 package yaml
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestMarshalScalarsAndMaps(t *testing.T) {
 	cases := []struct {
-		in	any
-		want	string
+		in   any
+		want string
 	}{
 		{nil, "null\n"},
 		{42, "42\n"},
@@ -75,8 +75,8 @@ func TestMarshalTopLevelSequenceOfMappingsExpanded(t *testing.T) {
 
 func TestMarshalQuotesAmbiguousStrings(t *testing.T) {
 	cases := []struct {
-		in	string
-		want	string
+		in   string
+		want string
 	}{
 		{"true", `x: "true"` + "\n"},
 		{"123", `x: "123"` + "\n"},
@@ -96,12 +96,12 @@ func TestMarshalQuotesAmbiguousStrings(t *testing.T) {
 
 func TestMarshalStructFieldOrderAndTags(t *testing.T) {
 	type Server struct {
-		Host	string		`yaml:"host"`
-		Port	int		`yaml:"port"`
-		Tags	[]string	`yaml:"tags,omitempty"`
-		secret	string		// unexported: skipped
-		Skip	string		`yaml:"-"`
-		Comment	string		`yaml:"comment,omitempty"`
+		Host    string   `yaml:"host"`
+		Port    int      `yaml:"port"`
+		Tags    []string `yaml:"tags,omitempty"`
+		secret  string   // unexported: skipped
+		Skip    string   `yaml:"-"`
+		Comment string   `yaml:"comment,omitempty"`
 	}
 	s := Server{Host: "h", Port: 80, secret: "x", Skip: "y"}
 	_ = s.secret

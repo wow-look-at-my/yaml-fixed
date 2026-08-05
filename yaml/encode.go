@@ -150,8 +150,8 @@ func writeSeq(b *strings.Builder, v reflect.Value, indent int) error {
 // the marker with spaces, so the tab sets the depth and the spaces handle the
 // alignment.
 //
-//	- name: Alice
-//	  age: 30
+//   - name: Alice
+//     age: 30
 //
 // Alignment needs a leading tab to align against, so at the document's left
 // margin (depth 0) a mapping item falls back to the dash-on-its-own-line form
