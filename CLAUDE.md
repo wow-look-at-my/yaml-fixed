@@ -38,7 +38,10 @@ accepts it and calls `Warn` once per file. This exception lives entirely in
   - `warn.go` -- the `Warn` hook (defaults to one line on stderr; replaceable to
     capture or silence non-fatal warnings).
 - `cmd/yaml/` -- the cobra CLI. One command per file, each self-registering
-  via `init()`; `main.go` only calls `Execute()`.
+  via `init()`; `main.go` only calls `Execute()`. `migrate.go` reads standard
+  space-indented YAML (via `gopkg.in/yaml.v3`'s Node tree, for order and
+  content fidelity, not its own decoder) and re-emits it through this
+  package's own `Marshal`.
 
 ## Build / test
 
@@ -77,3 +80,16 @@ It runs `go mod tidy`, `go vet`, tests with coverage, and the build. CI
   be as redundant as a `from-yaml`. (`to-json` uses `encoding/json` only to
   *encode* its output.)
 - Anchors/aliases, merge keys, and explicit tags are intentionally unsupported.
+- A mapping parses to `*Map` (ordered `Keys` + `Values`), not `map[string]any`,
+  so a caller with a semantic notion of key order (e.g. a matrix block) can
+  recover it. `Marshal` mirrors this: a `*Map`/`Map` value emits in its own key
+  order, never re-sorted. `ToPlain` recursively drops a `*Map` back to
+  `map[string]any` for a generic (order-free) consumer -- `Unmarshal` into
+  `interface{}` uses it internally, and `cmd/yaml fmt` calls it explicitly to
+  keep its own sort-keys canonicalization instead of inheriting order-preserving
+  `Marshal`.
+- `Unmarshaler` (`UnmarshalYAML(value any) error`) lets a type decode itself
+  from the generic parsed value in place of the built-in struct/map/slice
+  logic -- the extension point a caller with custom per-type decode rules
+  (validation, strict key sets, non-struct shapes) hooks into.
+  `UnmarshalStrict` rejects an unknown struct field instead of ignoring it.

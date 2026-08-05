@@ -36,7 +36,7 @@ func TestConsumeJSONObjectSpaceIndented(t *testing.T) {
 		"port": 8080,
 		"tags": []any{"x", "y"},
 	}
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, toPlainInterface(got))
 	require.Len(t, *msgs, 1, "space-indented JSON should warn once")
 	assert.Contains(t, (*msgs)[0], "JSON")
 	assert.Contains(t, (*msgs)[0], "tabs")
@@ -53,7 +53,7 @@ func TestConsumeJSONArraySpaceIndentedAndNested(t *testing.T) {
 		"]\n"
 	got, err := Parse([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, []any{1, 2, map[string]any{"deep": true}}, got)
+	assert.Equal(t, []any{1, 2, map[string]any{"deep": true}}, toPlainInterface(got))
 	require.Len(t, *msgs, 1)
 }
 
@@ -65,7 +65,7 @@ func TestConsumeJSONTabIndentedDoesNotWarn(t *testing.T) {
 		"}\n"
 	got, err := Parse([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"name": "Ada", "port": 8080}, got)
+	assert.Equal(t, map[string]any{"name": "Ada", "port": 8080}, toPlainInterface(got))
 	assert.Empty(t, *msgs, "tab-indented JSON is canonical; no warning")
 }
 
@@ -73,7 +73,7 @@ func TestConsumeJSONSingleLineDoesNotWarn(t *testing.T) {
 	msgs := captureWarn(t)
 	got, err := Parse([]byte(`{"a": 1, "b": [2, 3]}`))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": 1, "b": []any{2, 3}}, got)
+	assert.Equal(t, map[string]any{"a": 1, "b": []any{2, 3}}, toPlainInterface(got))
 	assert.Empty(t, *msgs, "single-line JSON has no indentation to flag")
 }
 
@@ -86,7 +86,7 @@ func TestConsumeJSONLeadingCommentAndBlankLines(t *testing.T) {
 		"}\n"
 	got, err := Parse([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": 1}, got)
+	assert.Equal(t, map[string]any{"a": 1}, toPlainInterface(got))
 	require.Len(t, *msgs, 1)
 }
 
@@ -97,7 +97,7 @@ func TestConsumeJSONTrailingComment(t *testing.T) {
 		"} # trailing\n"
 	got, err := Parse([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, map[string]any{"a": 1}, got)
+	assert.Equal(t, map[string]any{"a": 1}, toPlainInterface(got))
 	require.Len(t, *msgs, 1)
 }
 
@@ -107,7 +107,7 @@ func TestWarnOncePerFileAcrossDocuments(t *testing.T) {
 	in := "{\n  \"a\": 1\n}\n---\n[\n  2,\n  3\n]\n"
 	docs, err := ParseAll([]byte(in))
 	require.NoError(t, err)
-	assert.Equal(t, []any{map[string]any{"a": 1}, []any{2, 3}}, docs)
+	assert.Equal(t, []any{map[string]any{"a": 1}, []any{2, 3}}, toPlainInterface(docs))
 	assert.Len(t, *msgs, 1, "warning is once per file, not per document or per line")
 }
 

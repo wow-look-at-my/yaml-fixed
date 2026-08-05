@@ -23,7 +23,7 @@ var fmtCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		out, err := yaml.Marshal(v)
+		out, err := yaml.Marshal(yaml.ToPlain(v))
 		if err != nil {
 			return err
 		}

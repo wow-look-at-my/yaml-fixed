@@ -23,7 +23,7 @@ func TestParseFlowSequence(t *testing.T) {
 	for _, c := range cases {
 		got, err := parseFlow(c.in, 1)
 		require.NoError(t, err, "input %q", c.in)
-		assert.Equal(t, c.want, got, "input %q", c.in)
+		assert.Equal(t, c.want, toPlainInterface(got), "input %q", c.in)
 	}
 }
 
@@ -43,7 +43,7 @@ func TestParseFlowMapping(t *testing.T) {
 	for _, c := range cases {
 		got, err := parseFlow(c.in, 1)
 		require.NoError(t, err, "input %q", c.in)
-		assert.Equal(t, c.want, got, "input %q", c.in)
+		assert.Equal(t, c.want, toPlainInterface(got), "input %q", c.in)
 	}
 }
 
@@ -57,5 +57,5 @@ func TestParseFlowErrors(t *testing.T) {
 func TestFlowTrailingComment(t *testing.T) {
 	got, err := parseFlow("[1, 2] # tail", 1)
 	require.NoError(t, err)
-	assert.Equal(t, []any{1, 2}, got)
+	assert.Equal(t, []any{1, 2}, toPlainInterface(got))
 }

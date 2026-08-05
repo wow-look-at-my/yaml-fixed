@@ -270,7 +270,7 @@ func (p *parser) parseNode(indent int) (any, error) {
 }
 
 func (p *parser) parseMapping(indent int) (any, error) {
-	m := map[string]any{}
+	m := newMap()
 	for {
 		tok, err := p.peek()
 		if err != nil {
@@ -294,7 +294,7 @@ func (p *parser) parseMapping(indent int) (any, error) {
 		if !ok {
 			return nil, errorf(tok.no, indent+1, "expected a \"key: value\" mapping entry")
 		}
-		if _, dup := m[key]; dup {
+		if _, dup := m.Get(key); dup {
 			return nil, errorf(tok.no, indent+1, "duplicate mapping key %q", key)
 		}
 		p.next()
@@ -302,7 +302,7 @@ func (p *parser) parseMapping(indent int) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		m[key] = value
+		m.set(key, value)
 	}
 	return m, nil
 }
@@ -402,6 +402,13 @@ func parseItemBody(body []physLine, indent int) (any, error) {
 // given the inline text after the colon. When the inline text is empty the
 // value is the block indented one or more tabs deeper, or null.
 func (p *parser) parseValue(inline string, parentIndent, no int) (any, error) {
+	if strings.HasPrefix(inline, "#") {
+		// A bare trailing comment ("key: # why") carries no inline value --
+		// same as "key:" alone, the value comes from the following block (or
+		// is null). splitMapping only trims whitespace around the colon, so
+		// this is the one place that text reaches parseValue unstripped.
+		inline = ""
+	}
 	if inline == "" {
 		child, err := p.peek()
 		if err != nil {

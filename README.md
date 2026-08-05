@@ -123,6 +123,7 @@ go install github.com/wow-look-at-my/yaml-fixed/cmd/yaml@latest
 | `yaml validate [file]` | Exit 0 if the input is well-formed, else report the line/column. |
 | `yaml fmt [file] [-w]` | Emit canonical YAML: sort keys, re-indent with tabs. Reads YAML or JSON (so it doubles as JSON-to-YAML). `-w` rewrites the file. |
 | `yaml to-json [file]` | Emit JSON. Reads YAML or JSON. |
+| `yaml migrate [file] [-w]` | One-time conversion: reads standard, space-indented YAML (any width) and re-emits it tab-indented, preserving mapping key order and scalar content. `-w` rewrites the file. Anchors, aliases, and merge keys are rejected. |
 
 Every command reads the named file, or standard input when given no file (or `-`).
 
