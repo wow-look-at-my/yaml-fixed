@@ -2,6 +2,7 @@ package yaml
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -108,7 +109,7 @@ func decode(src any, dst reflect.Value, strict bool) error {
 		}
 		dst.SetFloat(f)
 	case reflect.String:
-		s, ok := src.(string)
+		s, ok := scalarAsString(src)
 		if !ok {
 			return typeErrorf("cannot decode %s into string", kindOf(src))
 		}
@@ -240,6 +241,27 @@ func decodeStruct(src any, dst reflect.Value, strict bool) error {
 		}
 	}
 	return nil
+}
+
+// scalarAsString coerces any scalar into a string target, the same loose
+// coercion gopkg.in/yaml.v3 applies: an unquoted `cmd: true` or `port: 8080`
+// decodes into a string field using the scalar's canonical text, exactly as
+// if it had been written quoted. Only a mapping or sequence source is
+// rejected -- those have no scalar text to coerce.
+func scalarAsString(src any) (string, bool) {
+	switch v := src.(type) {
+	case string:
+		return v, true
+	case bool:
+		return strconv.FormatBool(v), true
+	case int:
+		return strconv.Itoa(v), true
+	case int64:
+		return strconv.FormatInt(v, 10), true
+	case float64:
+		return strconv.FormatFloat(v, 'g', -1, 64), true
+	}
+	return "", false
 }
 
 func asInt(src any) (int64, bool) {

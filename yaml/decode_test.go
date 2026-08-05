@@ -64,6 +64,34 @@ func TestUnmarshalScalarTypes(t *testing.T) {
 	assert.Equal(t, "hi", s)
 }
 
+func TestUnmarshalScalarCoercedIntoString(t *testing.T) {
+	// An unquoted scalar decoding into a string field uses its canonical
+	// text, matching gopkg.in/yaml.v3: a caller writing `cmd: true` (a shell
+	// command that happens to be the word "true") expects the string "true",
+	// not a type error.
+	cases := []struct {
+		in   string
+		want string
+	}{
+		{"true", "true"},
+		{"false", "false"},
+		{"42", "42"},
+		{"3.5", "3.5"},
+	}
+	for _, tc := range cases {
+		var s string
+		require.NoError(t, Unmarshal([]byte(tc.in), &s), "input %q", tc.in)
+		assert.Equal(t, tc.want, s, "input %q", tc.in)
+	}
+}
+
+func TestUnmarshalMappingIntoStringErrors(t *testing.T) {
+	// A collection has no scalar text to coerce.
+	var s string
+	assert.Error(t, Unmarshal([]byte("a: 1\n"), &s))
+	assert.Error(t, Unmarshal([]byte("- 1\n"), &s))
+}
+
 func TestUnmarshalPointerField(t *testing.T) {
 	type T struct {
 		P *int `yaml:"p"`
