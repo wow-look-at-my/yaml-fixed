@@ -142,3 +142,16 @@ func TestMarshalDoesNotQuoteLeadingBang(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"!files": "!value"}, toPlainInterface(back))
 }
+
+// The same string as a SEQUENCE ITEM: emitted bare, and read back through the
+// parser's item path rather than its mapping-value one.
+func TestMarshalLeadingBangSequenceItemRoundTrips(t *testing.T) {
+	value := map[string]any{"!stdout": []any{"!boom", "plain"}}
+	got, err := Marshal(value)
+	require.NoError(t, err)
+	assert.Equal(t, "!stdout:\n\t- !boom\n\t- plain\n", string(got))
+
+	back, err := Parse(got)
+	require.NoError(t, err)
+	assert.Equal(t, value, toPlainInterface(back))
+}
