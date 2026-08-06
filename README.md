@@ -189,6 +189,9 @@ dash-on-its-own-line form) so output always re-parses.
 Anchors/aliases (`&`, `*`), the merge key (`<<`), explicit tags (`!!str`), and
 YAML directives beyond being skipped.
 
+Because tags are never parsed, `!` is an ordinary character: `!stdout: [a]` is a
+mapping under the key `!stdout`, and `Marshal` emits such a string unquoted.
+
 ## Development
 
 This is a Go module. Use the `go-toolchain` wrapper for everything (it builds,

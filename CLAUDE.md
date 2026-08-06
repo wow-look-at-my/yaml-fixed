@@ -80,6 +80,9 @@ It runs `go mod tidy`, `go vet`, tests with coverage, and the build. CI
   be as redundant as a `from-yaml`. (`to-json` uses `encoding/json` only to
   *encode* its output.)
 - Anchors/aliases, merge keys, and explicit tags are intentionally unsupported.
+  A consequence downstream depends on: `!` is an ordinary scalar character, so
+  `!stdout:` is the key `!stdout` (dats' negated assertion keys) and `Marshal`
+  does not quote it. Adding tag support would break that -- don't.
 - A mapping parses to `*Map` (ordered `Keys` + `Values`), not `map[string]any`,
   so a caller with a semantic notion of key order (e.g. a matrix block) can
   recover it. `Marshal` mirrors this: a `*Map`/`Map` value emits in its own key

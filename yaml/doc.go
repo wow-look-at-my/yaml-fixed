@@ -58,4 +58,6 @@
 //
 // Anchors/aliases (&, *), the merge key (<<), explicit tags (!!str) and
 // directives other than being skipped (%YAML, %TAG) are intentionally omitted.
+// Since tags are never parsed, '!' is an ordinary scalar character: "!stdout:"
+// is the key "!stdout", and Marshal leaves such a string unquoted.
 package yaml
