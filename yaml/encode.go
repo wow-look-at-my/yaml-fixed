@@ -396,8 +396,11 @@ func needsQuote(s string) bool {
 	if strings.Contains(s, ": ") || strings.HasSuffix(s, ":") || strings.Contains(s, " #") {
 		return true
 	}
+	// '!' is absent deliberately: tags are not parsed, so a leading '!' is an
+	// ordinary character here and quoting it would only make callers that use
+	// it as a naming convention (dats' "!stdout") round-trip into quotes.
 	switch s[0] {
-	case '-', '?', ':', ',', '[', ']', '{', '}', '&', '*', '!', '|', '>', '\'', '"', '%', '@', '`', '#', ' ':
+	case '-', '?', ':', ',', '[', ']', '{', '}', '&', '*', '|', '>', '\'', '"', '%', '@', '`', '#', ' ':
 		return true
 	}
 	return false

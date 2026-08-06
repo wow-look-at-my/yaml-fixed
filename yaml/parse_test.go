@@ -260,3 +260,21 @@ func TestValueWithColon(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"time": "12:30:00"}, toPlainInterface(got))
 }
+
+// Tags are not parsed, so a leading '!' is an ordinary scalar character: an
+// unquoted "!stdout:" is the key "!stdout", not a tagged node. dats spells its
+// negated assertion keys that way.
+func TestBangIsAnOrdinaryScalarCharacter(t *testing.T) {
+	got, err := Parse([]byte("outputs:\n\t!stdout:\n\t\t- boom\n\ttagish: !!str 7\n"))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"outputs": map[string]any{
+		"!stdout": []any{"boom"},
+		"tagish":  "!!str 7",
+	}}, toPlainInterface(got))
+}
+
+func TestQuotedBangKeyMatchesUnquoted(t *testing.T) {
+	got, err := Parse([]byte("\"!files\": 1\n"))
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"!files": 1}, toPlainInterface(got))
+}

@@ -129,3 +129,16 @@ func TestMarshalPointer(t *testing.T) {
 	assert.Equal(t, "p: 5\n", string(got))
 
 }
+
+// A '!'-leading string is emitted bare: the parser reads it back as itself, so
+// quoting would only bloat the output (and undo dats' unquoted "!files" keys
+// on a `yaml fmt`).
+func TestMarshalDoesNotQuoteLeadingBang(t *testing.T) {
+	got, err := Marshal(map[string]any{"!files": "!value"})
+	require.NoError(t, err)
+	assert.Equal(t, "!files: !value\n", string(got))
+
+	back, err := Parse(got)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"!files": "!value"}, toPlainInterface(back))
+}
